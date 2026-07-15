@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>만성질환 맞춤 식이 분석 대시보드</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1c2333;--sub:#667085;--line:#e5e8f0;--pri:#3457d5;--ok:#12805c;--warn:#b7791f;--bad:#c0392b;--chip:#eef1fa}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:#fff;border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:50}
+header h1{font-size:17px}
+.role-sw{margin-left:auto;display:flex;gap:6px}
+.role-sw button{padding:7px 14px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-weight:600}
+.role-sw button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+nav{display:flex;gap:4px;padding:10px 24px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+nav button{padding:8px 14px;border:none;background:none;border-radius:8px;cursor:pointer;color:var(--sub);font-weight:600}
+nav button.on{background:var(--chip);color:var(--pri)}
+main{padding:20px 24px;max-width:1280px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.card h2{font-size:15px;margin-bottom:10px}
+.card h3{font-size:13.5px;margin:12px 0 6px}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .v{font-size:22px;font-weight:700;margin-top:4px}
+.kpi .s{color:var(--sub);font-size:12px}
+.muted{color:var(--sub);font-size:12.5px}
+input,select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff}
+input[type=number]{width:90px}
+button.act{padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--sub);font-weight:600;white-space:nowrap;background:#fafbfe}
+tr:hover td{background:#fafbff}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700}
+.t-ok{background:#e6f4ee;color:var(--ok)}.t-warn{background:#fbf0dc;color:var(--warn)}.t-bad{background:#fae5e2;color:var(--bad)}.t-na{background:var(--chip);color:var(--sub)}
+.chip{display:inline-block;background:var(--chip);border-radius:6px;padding:2px 8px;font-size:12px;color:#44506b;margin:1px}
+.bar{height:10px;background:var(--chip);border-radius:6px;overflow:hidden;position:relative}
+.bar>i{display:block;height:100%;background:var(--pri);border-radius:6px}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hidden{display:none!important}
+.modal{position:fixed;inset:0;background:rgba(15,20,40,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:100;overflow:auto}
+.modal>.card{max-width:760px;width:100%}
+.pill{border:1px solid var(--line);border-radius:20px;padding:5px 12px;cursor:pointer;background:#fff;font-size:13px}
+.pill.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.qbox{display:flex;align-items:center;height:16px;position:relative;background:linear-gradient(90deg,#e8ecf9,#dfe5f7);border-radius:8px}
+.qbox .rng{position:absolute;height:100%;background:#b9c6f2;border-radius:8px}
+.qbox .med{position:absolute;width:3px;height:22px;top:-3px;background:var(--pri);border-radius:2px}
+.qbox .me{position:absolute;width:12px;height:12px;top:2px;background:var(--bad);border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--bad)}
+.note{background:#f0f4ff;border:1px solid #d6e0fb;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#33415e;margin:8px 0}
+.warnbox{background:#fdf3f2;border:1px solid #f2d4d0;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#7c2d24;margin:8px 0}
+footer{padding:18px 24px;color:var(--sub);font-size:12px;text-align:center}
+.right{text-align:right}
+.clickable{cursor:pointer}
+.small{font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>만성질환 맞춤 식이 분석 대시보드</h1>
+  <span class="muted" id="metaLine"></span>
+  <div class="role-sw">
+    <button id="roleUser" class="on" onclick="setRole('user')">사용자</button>
+    <button id="roleAdmin" onclick="setRole('admin')">관리자(영양사)</button>
+  </div>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+<footer>본 대시보드는 정보 제공 목적이며 의학적 진단·처방을 대체하지 않습니다. 질환 관리 관련 결정은 의사·임상영양사와 상의하십시오.<br>
+자료원: 질병관리청 국민건강영양조사 2020–2024 원시자료(24시간 회상법). 통계는 영양조사 가중치(wt_ntr)를 적용한 값입니다.</footer>
+<script id="dataScript">
+const DATA = /*__DATA__*/;
+</script>
+<script>
+/* ================= 공통 상태 ================= */
+const DAILY = {en:2000, na:2000, sugar:100, sfa:15, chol:300, cho:324, fat:54, prot:55};
+const DAILY_SRC = "1일 영양성분 기준치: 식품 등의 표시·광고에 관한 법률 시행규칙 별표 5 (나트륨 2,000mg, 당류 100g, 포화지방 15g, 콜레스테롤 300mg 등)";
+let CRIT = {
+  hp:{label:'고혈압', nut:'na', unit:'mg', caution:300, limit:600, basis:'1일 기준치 2,000mg의 15%/30% (1회 섭취분)'},
+  dm:{label:'당뇨',   nut:'sugar', unit:'g', caution:10, limit:25, basis:'1일 당류 기준치 100g의 10%/25% (1회 섭취분)'},
+  ob:{label:'비만',   nut:'en', unit:'kcal', caution:400, limit:700, basis:'1일 2,000kcal 기준 20%/35% (1회 섭취분)'},
+  kid:{label:'신장질환(확장)', nut:'k', unit:'mg', caution:450, limit:900, basis:'CKD 칼륨 제한식(약 2,000~3,000mg/일) 참조 — 임상 검토 필요'}
+};
+let critVersions = [{ver:1, date:'2026-07-08', by:'system', note:'초기 기본값(공식 1일 기준치 비율 기반, 영양사 검수 전)', snapshot:JSON.parse(JSON.stringify(CRIT))}];
+let reviewState = {};   // code -> {status, memo}
+let stdState = {};      // norm -> repCode
+let diary = [];         // {code,name,serv}
+let role='user', tab='search';
+const NUTL = {en:['에너지','kcal'],prot:['단백질','g'],fat:['지방','g'],sfa:['포화지방','g'],cho:['탄수화물','g'],sugar:['당류','g'],fiber:['식이섬유','g'],chol:['콜레스테롤','mg'],na:['나트륨','mg'],k:['칼륨','mg'],phos:['인','mg'],ca:['칼슘','mg']};
+const PNUT = {energy:['에너지','kcal'],carb:['탄수화물','g'],sugar:['당류','g'],fat:['지방','g'],sfa:['포화지방','g'],protein:['단백질','g'],sodium:['나트륨','mg'],potassium:['칼륨','mg'],phosphorus:['인','mg'],chol:['콜레스테롤','mg'],fiber:['식이섬유','g']};
+const FLAGL = {energy:'에너지 불일치', missing:'필수값 결측', na:'나트륨 이상치', sugar:'당류 이상치', intk:'섭취량 미소'};
+document.getElementById('metaLine').textContent = DATA.meta.source + ' · 음식 ' + DATA.dishes.length.toLocaleString() + '종 · 식품 ' + DATA.foods.length.toLocaleString() + '종';
+
+/* ================= 태그 판정 ================= */
+function tagOne(v, c){ if(v==null) return 'na'; if(v>=c.limit) return 'bad'; if(v>=c.caution) return 'warn'; return 'ok'; }
+function tagDish(d, crit){ crit=crit||CRIT; const out={};
+  for(const k in crit){ const c=crit[k]; const t=tagOne(d[c.nut],c);
+    out[k]={tag:t, val:d[c.nut], nut:c.nut}; } return out; }
+const TAGL={ok:['적합','t-ok'],warn:['주의','t-warn'],bad:['제한','t-bad'],na:['판정불가','t-na']};
+function tagHtml(t){const x=TAGL[t];return `<span class="tag ${x[1]}">${x[0]}</span>`}
+
+/* ================= 내비게이션 ================= */
+const TABS={user:[['search','음식 검색'],['diary','식단 기록'],['compare','국민 평균 비교']],
+ admin:[['aover','개요'],['queue','검수 큐'],['std','표준화·중복'],['crit','태그 기준 관리'],['ins','KNHANES 인사이트']]};
+function setRole(r){role=r;tab=TABS[r][0][0];
+ document.getElementById('roleUser').classList.toggle('on',r==='user');
+ document.getElementById('roleAdmin').classList.toggle('on',r==='admin');render();}
+function setTab(t){tab=t;render();}
+function nav(){const el=document.getElementById('nav');
+ el.innerHTML=TABS[role].map(([k,l])=>`<button class="${tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('');}
+function render(){nav();const m=document.getElementById('main');
+ const f={search:vSearch,diary:vDiary,compare:vCompare,aover:vAover,queue:vQueue,std:vStd,crit:vCrit,ins:vIns}[tab];
+ m.innerHTML=f();if(window['post_'+tab])window['post_'+tab]();}
+</script>
+<script>
+/* ================= 사용자: 검색 ================= */
+let q='', profSel={hp:true,dm:false,ob:false,kid:false}, kindF='';
+function vSearch(){
+ const kinds=[...new Set(DATA.dishes.map(d=>d.kind))].sort();
+ return `<div class="card"><h2>음식 검색 · 질환별 적합도</h2>
+ <div class="flex">
+  <input id="q" style="flex:1;min-width:240px" placeholder="음식명 검색 (예: 김치찌개, 잡곡밥, 라면)" value="${q}" oninput="q=this.value;refreshList()">
+  <select onchange="kindF=this.value;refreshList()"><option value="">전체 분류</option>${kinds.map(k=>`<option ${k===kindF?'selected':''}>${k}</option>`).join('')}</select>
+ </div>
+ <div class="flex" style="margin-top:10px">내 질환 프로필:
+  ${Object.keys(CRIT).map(k=>`<span class="pill ${profSel[k]?'on':''}" onclick="profSel['${k}']=!profSel['${k}'];render()">${CRIT[k].label}</span>`).join('')}
+ </div>
+ <p class="muted" style="margin-top:8px">영양값은 국민건강영양조사에서 관찰된 <b>1회 섭취분(중앙값)</b> 기준. 태그는 관리자 태그 기준(v${critVersions.length})에 따른 자동 판정입니다.</p>
+ </div>
+ <div class="card"><div id="list"></div></div>
+ <div id="modalWrap"></div>`;
+}
+function post_search(){refreshList();}
+function refreshList(){
+ const el=document.getElementById('list'); if(!el)return;
+ let rows=DATA.dishes.filter(d=>(!q||d.name.includes(q.trim()))&&(!kindF||d.kind===kindF));
+ const total=rows.length; rows=rows.slice(0,60);
+ const prof=Object.keys(CRIT).filter(k=>profSel[k]);
+ el.innerHTML=`<p class="muted">${total.toLocaleString()}건 중 ${rows.length}건 표시 (섭취빈도순)</p>
+ <table><tr><th>음식명</th><th>분류</th><th class="right">1회 섭취분</th><th class="right">에너지</th><th class="right">나트륨</th><th class="right">당류</th>${prof.map(k=>`<th>${CRIT[k].label}</th>`).join('')}<th></th></tr>
+ ${rows.map(d=>{const tg=tagDish(d);
+  return `<tr class="clickable" onclick="openDish(${d.code})"><td><b>${d.name}</b><div class="muted small">${d.cnt.toLocaleString()}회 관찰</div></td>
+  <td><span class="chip">${d.kind}</span></td><td class="right">${fmt(d.intk)} g</td><td class="right">${fmt(d.en)} kcal</td>
+  <td class="right">${fmt(d.na)} mg</td><td class="right">${fmt(d.sugar)} g</td>
+  ${prof.map(k=>`<td>${tagHtml(tg[k].tag)}</td>`).join('')}<td class="muted">상세 ›</td></tr>`}).join('')}</table>`;
+}
+function fmt(v){return v==null?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:1})}
+function openDish(code){
+ const d=DATA.dishes.find(x=>x.code===code); const tg=tagDish(d);
+ const alts=DATA.dishes.filter(x=>x.kind===d.kind&&x.code!==d.code&&Object.keys(CRIT).every(k=>!profSel[k]||tagDish(x)[k].tag==='ok'))
+   .sort((a,b)=>{const k=Object.keys(CRIT).find(k=>profSel[k]&&tg[k].tag!=='ok');return k?(a[CRIT[k].nut]??1e9)-(b[CRIT[k].nut]??1e9):b.cnt-a.cnt}).slice(0,5);
+ document.getElementById('modalWrap').innerHTML=`<div class="modal" onclick="if(event.target===this)this.remove()"><div class="card">
+ <div class="flex"><h2 style="flex:1">${d.name}</h2><button class="act" onclick="addDiary(${d.code});this.textContent='추가됨'">식단에 추가</button><button class="act" onclick="document.querySelector('.modal').remove()">닫기</button></div>
+ <p class="muted">${d.kind} · ${d.cnt.toLocaleString()}회 관찰(${d.people.toLocaleString()}명) · 1회 섭취분 ${fmt(d.intk)}g · 재료 수 중앙값 ${fmt(d.nIng)}</p>
+ <h3>질환별 판정 (1회 섭취분 기준)</h3>
+ <table>${Object.keys(CRIT).map(k=>{const c=CRIT[k],t=tg[k];
+   return `<tr><td>${c.label}</td><td>${tagHtml(t.tag)}</td><td>${NUTL[c.nut][0]} ${fmt(t.val)}${c.unit} / 주의 ${c.caution}${c.unit} · 제한 ${c.limit}${c.unit}</td></tr>`}).join('')}</table>
+ <h3>영양성분 (1회 섭취분 · 1일 기준치 대비)</h3>
+ <table>${['en','cho','sugar','fat','sfa','prot','chol','na','k','phos','fiber','ca'].map(n=>{
+   const dv=DAILY[n];const pct=dv&&d[n]!=null?Math.min(100,d[n]/dv*100):null;
+   return `<tr><td style="width:110px">${NUTL[n][0]}</td><td style="width:120px" class="right">${fmt(d[n])} ${NUTL[n][1]}</td>
+   <td>${pct!=null?`<div class="bar"><i style="width:${pct}%;background:${pct>=50?'var(--bad)':pct>=25?'var(--warn)':'var(--pri)'}"></i></div>`:''}</td>
+   <td class="right muted" style="width:90px">${pct!=null?pct.toFixed(0)+'% / 1일':''}</td></tr>`}).join('')}</table>
+ <p class="muted small">${DAILY_SRC}</p>
+ ${alts.length?`<h3>같은 분류의 대체 후보 (프로필 기준 전항목 적합)</h3><table>${alts.map(a=>`<tr class="clickable" onclick="openDish(${a.code})"><td>${a.name}</td><td class="right">${fmt(a.en)} kcal</td><td class="right">나트륨 ${fmt(a.na)} mg</td><td class="right">당류 ${fmt(a.sugar)} g</td></tr>`).join('')}</table>`:''}
+ </div></div>`;
+}
+/* ================= 사용자: 식단 기록 ================= */
+function addDiary(code){const d=DATA.dishes.find(x=>x.code===code);diary.push({code,name:d.name,serv:1});}
+function vDiary(){
+ const tot={};['en','cho','sugar','fat','sfa','prot','chol','na','k','phos','fiber'].forEach(n=>tot[n]=0);
+ diary.forEach(it=>{const d=DATA.dishes.find(x=>x.code===it.code);for(const n in tot)if(d[n]!=null)tot[n]+=d[n]*it.serv;});
+ const warns=[];
+ Object.keys(CRIT).forEach(k=>{if(!profSel[k])return;const c=CRIT[k];const map={na:'na',sugar:'sugar',en:'en',k:'k'};
+  const dl={na:2000,sugar:100,en:2000,k:3500}[c.nut];
+  if(dl&&tot[c.nut]>dl)warns.push(`${c.label}: ${NUTL[c.nut][0]} 하루 누적 ${fmt(tot[c.nut])}${c.unit} — 1일 참고 기준(${dl.toLocaleString()}${c.unit}) 초과`);});
+ return `<div class="card"><h2>일일 식단 기록</h2>
+ <p class="muted">검색 탭에서 음식 상세 → "식단에 추가"로 기록합니다. 기록은 브라우저를 닫으면 사라지므로 필요 시 내보내기를 이용하세요.</p>
+ <div class="flex" style="margin:8px 0"><button class="act" onclick="exportDiary()">CSV 내보내기</button><button class="act" onclick="diary=[];render()">비우기</button></div>
+ ${diary.length?`<table><tr><th>음식</th><th>회분</th><th class="right">에너지</th><th class="right">나트륨</th><th class="right">당류</th><th></th></tr>
+ ${diary.map((it,i)=>{const d=DATA.dishes.find(x=>x.code===it.code);
+  return `<tr><td>${it.name}</td><td><input type="number" min="0.5" step="0.5" value="${it.serv}" style="width:64px" onchange="diary[${i}].serv=+this.value;render()"></td>
+  <td class="right">${fmt(d.en*it.serv)} kcal</td><td class="right">${fmt(d.na*it.serv)} mg</td><td class="right">${fmt(d.sugar*it.serv)} g</td>
+  <td><button class="act" onclick="diary.splice(${i},1);render()">삭제</button></td></tr>`}).join('')}</table>`:'<p class="muted">기록된 음식이 없습니다.</p>'}
+ ${warns.map(w=>`<div class="warnbox">${w}</div>`).join('')}
+ <h3>하루 누적 (1일 기준치 대비)</h3>
+ <table>${Object.keys(tot).map(n=>{const dv=DAILY[n];const pct=dv?Math.min(130,tot[n]/dv*100):null;
+  return `<tr><td style="width:110px">${NUTL[n][0]}</td><td class="right" style="width:130px">${fmt(tot[n])} ${NUTL[n][1]}</td>
+  <td>${pct!=null?`<div class="bar"><i style="width:${Math.min(100,pct)}%;background:${pct>=100?'var(--bad)':pct>=70?'var(--warn)':'var(--ok)'}"></i></div>`:''}</td>
+  <td class="right muted" style="width:80px">${pct!=null?pct.toFixed(0)+'%':''}</td></tr>`}).join('')}</table>
+ <p class="muted small">${DAILY_SRC}</p></div>`;
+}
+function exportDiary(){
+ const rows=[['음식','회분','에너지kcal','나트륨mg','당류g']];
+ diary.forEach(it=>{const d=DATA.dishes.find(x=>x.code===it.code);rows.push([it.name,it.serv,d.en*it.serv,d.na*it.serv,d.sugar*it.serv]);});
+ dl('식단기록.csv',rows.map(r=>r.join(',')).join('\n'));
+}
+function dl(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(["﻿"+text],{type:'text/csv'}));a.download=name;a.click();}
+/* ================= 사용자: 국민 평균 비교 ================= */
+let cmpSex='1',cmpAge='30-39',cmpUseDiary=true,cmpManual={};
+function vCompare(){
+ const g=DATA.person.groups[cmpSex+'|'+cmpAge];
+ const tot={};const map={energy:'en',carb:'cho',sugar:'sugar',fat:'fat',sfa:'sfa',protein:'prot',sodium:'na',potassium:'k',phosphorus:'phos',chol:'chol',fiber:'fiber'};
+ Object.keys(map).forEach(k=>tot[k]=0);
+ diary.forEach(it=>{const d=DATA.dishes.find(x=>x.code===it.code);for(const k in map)if(d[map[k]]!=null)tot[k]+=d[map[k]]*it.serv;});
+ return `<div class="card"><h2>내 섭취 vs 국민 평균 (동일 성·연령 집단)</h2>
+ <div class="flex">성별 <select onchange="cmpSex=this.value;render()"><option value="1" ${cmpSex==='1'?'selected':''}>남</option><option value="2" ${cmpSex==='2'?'selected':''}>여</option></select>
+ 연령 <select onchange="cmpAge=this.value;render()">${['19-29','30-39','40-49','50-59','60-69','70+'].map(a=>`<option ${a===cmpAge?'selected':''}>${a}</option>`).join('')}</select>
+ <label><input type="checkbox" ${cmpUseDiary?'checked':''} onchange="cmpUseDiary=this.checked;render()"> 식단 기록 합계 사용</label></div>
+ <p class="muted" style="margin-top:6px">비교 집단: ${cmpSex==='1'?'남':'여'} ${cmpAge}세 (표본 ${g.n.toLocaleString()}명, 2020–2024 통합, 가중치 적용). 막대는 인구 p10–p90 범위, 세로선은 중앙값, 붉은 점이 내 위치입니다.</p>
+ <table><tr><th>영양소</th><th style="width:45%">분포 내 위치</th><th class="right">내 섭취</th><th class="right">중앙값</th><th class="right">백분위</th></tr>
+ ${Object.keys(PNUT).map(k=>{
+   const qs=g[k];if(!qs)return'';
+   const me=cmpUseDiary?tot[k]:(cmpManual[k]||0);
+   const p10=qs[2],p90=qs[18],med=qs[10],lo=qs[0],hi=qs[20];
+   const pos=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));
+   const pct=percentile(qs,me);
+   return `<tr><td>${PNUT[k][0]}</td>
+   <td><div class="qbox"><span class="rng" style="left:${pos(p10)}%;width:${pos(p90)-pos(p10)}%"></span><span class="med" style="left:${pos(med)}%"></span>${me>0?`<span class="me" style="left:calc(${pos(me)}% - 6px)"></span>`:''}</div></td>
+   <td class="right">${cmpUseDiary?fmt(me):`<input type="number" value="${cmpManual[k]||''}" onchange="cmpManual['${k}']=+this.value;render()">`} ${PNUT[k][1]}</td>
+   <td class="right">${fmt(med)} ${PNUT[k][1]}</td><td class="right">${me>0?'p'+pct.toFixed(0):'–'}</td></tr>`}).join('')}
+ </table></div>`;
+}
+function percentile(qs,v){const grid=DATA.person.meta.quantiles;
+ if(v<=qs[0])return 0;if(v>=qs[qs.length-1])return 100;
+ for(let i=1;i<qs.length;i++)if(v<=qs[i]){const f=(v-qs[i-1])/(qs[i]-qs[i-1]||1);return (grid[i-1]+f*(grid[i]-grid[i-1]))*100;}return 100;}
+</script>
+<script>
+/* ================= 관리자: 개요 ================= */
+function qStats(){let need=0,done=0,total=DATA.dishes.length;
+ DATA.dishes.forEach(d=>{const st=(reviewState[d.code]||{}).status;
+   if(d.flags.length){if(st==='approved'||st==='rejected')done++;else need++;}});
+ return {need,done,total,flagged:DATA.dishes.filter(d=>d.flags.length).length};}
+function vAover(){const s=qStats();
+ const foodFlag=DATA.foods.filter(f=>f.flags.length).length;
+ return `<div class="grid g4">
+ <div class="kpi"><div class="s">음식 마스터</div><div class="v">${DATA.dishes.length.toLocaleString()}</div><div class="s">식품(재료) ${DATA.foods.length.toLocaleString()}종</div></div>
+ <div class="kpi"><div class="s">검수 대기</div><div class="v" style="color:var(--warn)">${s.need.toLocaleString()}</div><div class="s">자동 플래그 발생분</div></div>
+ <div class="kpi"><div class="s">중복 의심 클러스터</div><div class="v" style="color:var(--bad)">${DATA.clusters.length.toLocaleString()}</div><div class="s">동일 정규명·복수 코드</div></div>
+ <div class="kpi"><div class="s">태그 기준 버전</div><div class="v">v${critVersions.length}</div><div class="s">최근 변경 ${critVersions[critVersions.length-1].date}</div></div>
+ </div>
+ <div class="card"><h2>데이터 품질 요약</h2>
+ <table><tr><th>지표</th><th class="right">값</th><th>설명</th></tr>
+ <tr><td>음식 플래그율</td><td class="right">${(s.flagged/s.total*100).toFixed(1)}%</td><td>자동 검수 규칙에 걸린 음식 비율</td></tr>
+ <tr><td>식품 플래그 수</td><td class="right">${foodFlag}</td><td>100g 환산값 이상치·불일치</td></tr>
+ <tr><td>중복 의심 코드 수</td><td class="right">${DATA.clusters.reduce((a,c)=>a+c.items.length,0)}</td><td>표준화 대상 항목</td></tr>
+ <tr><td>검수 처리 완료</td><td class="right">${s.done}</td><td>이번 세션 승인/반려 건</td></tr></table>
+ <div class="note">개요 KPI는 PRD 7장 성공 지표(검수 효율·데이터 품질)의 실측 근거로 사용됩니다.</div></div>`;
+}
+/* ================= 관리자: 검수 큐 ================= */
+let qFilter='all';
+function vQueue(){
+ let rows=DATA.dishes.filter(d=>d.flags.length);
+ if(qFilter!=='all')rows=rows.filter(d=>d.flags.includes(qFilter));
+ rows=rows.filter(d=>{const st=(reviewState[d.code]||{}).status;return !st;}).concat(
+      rows.filter(d=>{const st=(reviewState[d.code]||{}).status;return st;}));
+ const foodrows=DATA.foods.filter(f=>f.flags.length).slice(0,40);
+ return `<div class="card"><h2>영양성분 검수 큐</h2>
+ <p class="muted">자동 플래깅 규칙: 에너지-영양소 계산 불일치(±30% 초과), 필수값 결측, 나트륨 이상치(1회분 2,300mg / 100g당 3,000mg 초과), 섭취량 미소(5g 미만), 당류 이상치(100g당 60g 초과).</p>
+ <div class="flex" style="margin:8px 0"><span class="pill ${qFilter==='all'?'on':''}" onclick="qFilter='all';render()">전체</span>
+ ${Object.keys(FLAGL).map(f=>`<span class="pill ${qFilter===f?'on':''}" onclick="qFilter='${f}';render()">${FLAGL[f]}</span>`).join('')}</div>
+ <table><tr><th>음식</th><th>플래그</th><th class="right">에너지</th><th class="right">계산에너지</th><th class="right">나트륨</th><th class="right">1회분</th><th>상태</th><th>처리</th></tr>
+ ${rows.slice(0,80).map(d=>{const st=(reviewState[d.code]||{});const calc=(4*(d.prot||0)+4*(d.cho||0)+9*(d.fat||0)).toFixed(0);
+  return `<tr><td><b>${d.name}</b> <span class="muted small">${d.kind}</span></td>
+  <td>${d.flags.map(f=>`<span class="chip">${FLAGL[f]}</span>`).join('')}</td>
+  <td class="right">${fmt(d.en)}</td><td class="right ${Math.abs(calc-d.en)/(d.en||1)>0.3?'':''}" style="color:${d.flags.includes('energy')?'var(--bad)':'inherit'}">${calc}</td>
+  <td class="right">${fmt(d.na)}</td><td class="right">${fmt(d.intk)}g</td>
+  <td>${st.status?tagStatus(st.status):'<span class="tag t-warn">대기</span>'}</td>
+  <td><button class="act" onclick="setReview(${d.code},'approved')">승인</button> <button class="act" onclick="setReview(${d.code},'rejected')">반려</button></td></tr>`}).join('')}</table>
+ </div>
+ <div class="card"><h2>식품(재료) 100g 기준 이상치</h2>
+ <table><tr><th>식품명</th><th>분류</th><th>플래그</th><th class="right">에너지/100g</th><th class="right">나트륨/100g</th><th class="right">당류/100g</th></tr>
+ ${foodrows.map(f=>`<tr><td>${f.name}</td><td><span class="chip">${f.kind}</span></td><td>${f.flags.map(x=>`<span class="chip">${FLAGL[x]||x}</span>`).join('')}</td>
+  <td class="right">${fmt(f.en)}</td><td class="right">${fmt(f.na)}</td><td class="right">${fmt(f.sugar)}</td></tr>`).join('')}</table></div>`;
+}
+function tagStatus(s){return s==='approved'?'<span class="tag t-ok">승인</span>':'<span class="tag t-bad">반려</span>';}
+function setReview(code,st){reviewState[code]={status:st,at:new Date().toISOString()};render();}
+/* ================= 관리자: 표준화·중복 ================= */
+function vStd(){
+ return `<div class="card"><h2>음식명 표준화 · 중복 관리</h2>
+ <p class="muted">정규화(공백·괄호·기호 제거) 후 동일 명칭이나 코드가 다른 항목을 자동 군집화했습니다. 각 군집에서 대표 코드를 지정하면 하위 명칭이 매핑됩니다.</p>
+ <table><tr><th>정규화 명칭</th><th>후보 항목 (관찰 빈도)</th><th>대표 지정</th></tr>
+ ${DATA.clusters.slice(0,120).map(c=>{const rep=stdState[c.norm];
+  return `<tr><td><b>${c.norm}</b><div class="muted small">${c.items.length}개 코드</div></td>
+  <td>${c.items.map(i=>`<span class="chip" style="${rep===i.code?'background:var(--pri);color:#fff':''}">${i.name} · ${i.cnt.toLocaleString()}회</span>`).join(' ')}</td>
+  <td><select onchange="stdState['${c.norm}']=+this.value;render()"><option value="">미지정</option>${c.items.map(i=>`<option value="${i.code}" ${rep===i.code?'selected':''}>${i.name}</option>`).join('')}</select></td></tr>`}).join('')}</table>
+ <div class="note">지정 완료 ${Object.keys(stdState).length} / ${DATA.clusters.length} 군집. 실제 병합은 승인 워크플로우를 거쳐 원본 불변 원칙 하에 매핑 테이블로 반영됩니다.</div></div>`;
+}
+/* ================= 관리자: 태그 기준 관리 ================= */
+let sim=null;
+function vCrit(){
+ return `<div class="card"><h2>식이 태그 기준 관리</h2>
+ <p class="muted">질환별 제한 영양소와 임계값(주의/제한)을 1회 섭취분 기준으로 설정합니다. 저장 전 "영향 시뮬레이션"으로 태그가 바뀌는 음식 수를 확인하십시오.</p>
+ <table><tr><th>질환</th><th>제한 영양소</th><th>주의 임계</th><th>제한 임계</th><th>근거</th></tr>
+ ${Object.keys(CRIT).map(k=>{const c=CRIT[k];
+  return `<tr><td><b>${c.label}</b></td>
+  <td><select onchange="CRIT['${k}'].nut=this.value"><option value="na" ${c.nut==='na'?'selected':''}>나트륨</option><option value="sugar" ${c.nut==='sugar'?'selected':''}>당류</option><option value="en" ${c.nut==='en'?'selected':''}>에너지</option><option value="sfa" ${c.nut==='sfa'?'selected':''}>포화지방</option><option value="k" ${c.nut==='k'?'selected':''}>칼륨</option><option value="phos" ${c.nut==='phos'?'selected':''}>인</option><option value="chol" ${c.nut==='chol'?'selected':''}>콜레스테롤</option></select></td>
+  <td><input type="number" value="${c.caution}" onchange="CRIT['${k}'].caution=+this.value"> ${c.unit}</td>
+  <td><input type="number" value="${c.limit}" onchange="CRIT['${k}'].limit=+this.value"> ${c.unit}</td>
+  <td class="muted small">${c.basis}</td></tr>`}).join('')}</table>
+ <div class="flex" style="margin-top:10px"><button class="act pri" onclick="runSim()">영향 시뮬레이션</button><button class="act" onclick="saveCrit()">기준 저장(새 버전)</button></div>
+ ${sim?`<div class="note">시뮬레이션 결과 — 현재 기준 대비 태그가 변경되는 음식: <b>${sim.changed.toLocaleString()}건</b> (적합→주의/제한 ${sim.up}, 완화 ${sim.down}). 새 기준 적용 시 제한 태그 음식 총 ${sim.bad}건, 주의 ${sim.warn}건.</div>`:''}
+ </div>
+ <div class="card"><h2>기준 버전 이력</h2>
+ <table><tr><th>버전</th><th>일시</th><th>변경자</th><th>메모</th></tr>
+ ${critVersions.slice().reverse().map(v=>`<tr><td>v${v.ver}</td><td>${v.date}</td><td>${v.by}</td><td>${v.note}</td></tr>`).join('')}</table></div>`;
+}
+function runSim(){
+ let up=0,down=0,bad=0,warn=0;const prev=critVersions[critVersions.length-1].snapshot;
+ DATA.dishes.forEach(d=>{const a=tagDish(d,prev),b=tagDish(d,CRIT);
+  Object.keys(CRIT).forEach(k=>{const rank={ok:0,warn:1,bad:2,na:-1};const ra=rank[a[k]?a[k].tag:'na'],rb=rank[b[k].tag];
+   if(rb>ra&&ra>=0)up++;if(rb<ra&&rb>=0)down++;});
+  Object.keys(CRIT).forEach(k=>{if(b[k].tag==='bad')bad++;if(b[k].tag==='warn')warn++;});});
+ sim={changed:up+down,up,down,bad,warn};render();
+}
+function saveCrit(){critVersions.push({ver:critVersions.length+1,date:new Date().toISOString().slice(0,10),by:'영양사(현재 세션)',note:'기준 임계값 조정',snapshot:JSON.parse(JSON.stringify(CRIT))});sim=null;render();}
+/* ================= 관리자: KNHANES 인사이트 ================= */
+let insNut='sodium', insView='disease';
+function vIns(){
+ const P=DATA.person;
+ return `<div class="card"><h2>국민건강영양조사 인사이트</h2>
+ <div class="flex">영양소 <select onchange="insNut=this.value;render()">${Object.keys(PNUT).map(k=>`<option value="${k}" ${k===insNut?'selected':''}>${PNUT[k][0]}</option>`).join('')}</select>
+ <span class="pill ${insView==='disease'?'on':''}" onclick="insView='disease';render()">질환군 비교</span>
+ <span class="pill ${insView==='age'?'on':''}" onclick="insView='age';render()">성·연령 분포</span>
+ <span class="pill ${insView==='trend'?'on':''}" onclick="insView='trend';render()">연도 추이</span></div>
+ <div id="insBody" style="margin-top:12px">${insView==='disease'?insDisease():insView==='age'?insAge():insTrend()}</div>
+ <div class="note">태그 기준 설정 시, 해당 영양소의 실제 국민 섭취 분포를 근거로 임계값의 현실성을 검토할 수 있습니다. 모든 통계는 영양조사 가중치(wt_ntr)를 적용했습니다.</div></div>`;
+}
+function bar(v,max,color){return `<div class="bar" style="height:14px"><i style="width:${Math.min(100,v/max*100)}%;background:${color||'var(--pri)'}"></i></div>`}
+function insDisease(){const P=DATA.person.disease;const pairs=[['hp','고혈압'],['dm','당뇨'],['ob','비만(BMI≥25)']];
+ const max=Math.max(...pairs.flatMap(([p])=>[P[p+'1'][insNut],P[p+'0'][insNut]]));
+ return `<table><tr><th>집단</th><th style="width:40%">평균 ${PNUT[insNut][0]}</th><th class="right">유병군</th><th class="right">비유병군</th><th class="right">차이</th></tr>
+ ${pairs.map(([p,l])=>{const a=P[p+'1'][insNut],b=P[p+'0'][insNut];
+  return `<tr><td>${l}</td><td>${bar(a,max,'var(--bad)')}${bar(b,max,'#9db0e8')}</td>
+  <td class="right">${fmt(a)} <span class="muted small">(n=${P[p+'1'].n.toLocaleString()})</span></td>
+  <td class="right">${fmt(b)}</td><td class="right" style="color:${a>b?'var(--bad)':'var(--ok)'}">${a>b?'+':''}${fmt(a-b)} ${PNUT[insNut][1]}</td></tr>`}).join('')}</table>
+ <p class="muted small">붉은 막대=유병군, 파란 막대=비유병군 평균. 단위 ${PNUT[insNut][1]}.</p>`;
+}
+function insAge(){const G=DATA.person.groups;const ages=['19-29','30-39','40-49','50-59','60-69','70+'];
+ const max=Math.max(...ages.flatMap(a=>['1','2'].map(s=>(G[s+'|'+a]||{})[insNut]?G[s+'|'+a][insNut][10]:0)));
+ return `<table><tr><th>연령대</th><th style="width:30%">남 (중앙값)</th><th class="right">남</th><th style="width:30%">여 (중앙값)</th><th class="right">여</th></tr>
+ ${ages.map(a=>{const m=G['1|'+a],f=G['2|'+a];const mv=m?m[insNut][10]:null,fv=f?f[insNut][10]:null;
+  return `<tr><td>${a}세</td><td>${mv!=null?bar(mv,max):'–'}</td><td class="right">${fmt(mv)}</td><td>${fv!=null?bar(fv,max,'#c77'):'–'}</td><td class="right">${fmt(fv)}</td></tr>`}).join('')}</table>
+ <p class="muted small">각 집단 ${PNUT[insNut][0]} 섭취 중앙값(p50), 단위 ${PNUT[insNut][1]}.</p>`;
+}
+function insTrend(){const T=DATA.person.trend;const keys=Object.keys(T).sort();
+ const tn={energy:'에너지',sodium:'나트륨',sugar:'당류',sfa:'포화지방',potassium:'칼륨'};
+ const nk=Object.keys(tn).includes(insNut)?insNut:'sodium';
+ const max=Math.max(...keys.map(y=>T[y][nk]));
+ return `${nk!==insNut?`<p class="muted">연도 추이는 주요 영양소만 제공합니다. '${tn[nk]}' 기준 표시.</p>`:''}
+ <table><tr><th>연도</th><th style="width:55%">평균 ${tn[nk]}</th><th class="right">값</th><th class="right">표본</th></tr>
+ ${keys.map(y=>`<tr><td>${y}</td><td>${bar(T[y][nk],max)}</td><td class="right">${fmt(T[y][nk])} ${PNUT[nk][1]}</td><td class="right muted">${T[y].n.toLocaleString()}</td></tr>`).join('')}</table>`;
+}
+/* ================= init ================= */
+render();
+</script>
+</body>
+</html>
